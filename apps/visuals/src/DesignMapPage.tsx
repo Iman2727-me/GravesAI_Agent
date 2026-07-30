@@ -96,12 +96,12 @@ export default function DesignMapPage() {
     ];
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="${120 + lines.length * 28}">
-  <rect width="100%" height="100%" fill="#121a22"/>
-  <text x="32" y="48" fill="#5ec2c7" font-family="Georgia, serif" font-size="28">Solution Design Map</text>
+  <rect width="100%" height="100%" fill="#121a28"/>
+  <text x="32" y="48" fill="#5b8def" font-family="Georgia, serif" font-size="28">Solution Design Map</text>
   ${lines
     .map(
       (l, i) =>
-        `<text x="32" y="${90 + i * 28}" fill="#e7eef5" font-family="IBM Plex Sans, sans-serif" font-size="14">${escapeXml(l.slice(0, 110))}</text>`,
+        `<text x="32" y="${90 + i * 28}" fill="#e8eef8" font-family="IBM Plex Sans, sans-serif" font-size="14">${escapeXml(l.slice(0, 110))}</text>`,
     )
     .join("\n  ")}
 </svg>`;

@@ -11,7 +11,7 @@ export function createSessionRouter(pipeline: PipelineService, adapters: Adapter
       ok: true,
       name: "thomas-api",
       mode: env.mode,
-      message: "Thomas is standing by, sir.",
+      message: "Thomas is standing by, Isaac.",
     });
   });
 

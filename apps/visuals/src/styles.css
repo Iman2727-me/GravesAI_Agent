@@ -1,12 +1,12 @@
 :root {
-  --bg0: #0b1014;
-  --bg1: #121a22;
-  --ink: #e7eef5;
-  --muted: #8fa3b5;
-  --accent: #5ec2c7;
-  --accent-2: #d4a574;
-  --line: rgba(94, 194, 199, 0.28);
-  --panel: rgba(18, 26, 34, 0.88);
+  --bg0: #0a1018;
+  --bg1: #121a28;
+  --ink: #e8eef8;
+  --muted: #8fa0b8;
+  --accent: #5b8def;
+  --accent-2: #7eb6ff;
+  --line: rgba(91, 141, 239, 0.28);
+  --panel: rgba(18, 26, 40, 0.88);
   --font-display: "Libre Baskerville", Georgia, serif;
   --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
 }
@@ -26,8 +26,8 @@ body {
   font-family: var(--font-body);
   color: var(--ink);
   background:
-    radial-gradient(900px 500px at 0% 0%, rgba(94, 194, 199, 0.16), transparent 55%),
-    radial-gradient(800px 480px at 100% 20%, rgba(212, 165, 116, 0.12), transparent 50%),
+    radial-gradient(900px 500px at 0% 0%, rgba(91, 141, 239, 0.16), transparent 55%),
+    radial-gradient(800px 480px at 100% 20%, rgba(126, 182, 255, 0.12), transparent 50%),
     linear-gradient(165deg, var(--bg0), var(--bg1));
   background-attachment: fixed;
 }

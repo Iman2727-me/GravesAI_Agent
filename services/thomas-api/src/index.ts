@@ -51,7 +51,7 @@ async function main() {
 
   app.listen(env.port, () => {
     console.log(
-      `Thomas API listening on http://localhost:${env.port} (mode=${env.mode}). Standing by, sir.`,
+      `Thomas API listening on http://localhost:${env.port} (mode=${env.mode}). Standing by, Isaac.`,
     );
   });
 }

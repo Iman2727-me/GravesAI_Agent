@@ -16,11 +16,16 @@ import {
 } from "@thomas/shared";
 import { env } from "../config.js";
 import type { Adapters } from "../adapters/index.js";
-import { stageSystemPrompt, stageUserPrompt } from "../adapters/llm.js";
+import {
+  stageSystemPrompt,
+  stageUserPrompt,
+  questionGenUserPrompt,
+  parseGeneratedQuestions,
+} from "../adapters/llm.js";
 
 const STAGE_QUESTIONS: Record<StageId, string[]> = {
   problem_intake: [
-    "In one sentence, what painful problem are you actually solving, sir?",
+    "In one sentence, what painful problem are you actually solving, Isaac?",
     "Who experiences this problem most acutely, and how often?",
     "What have you already tried, if anything?",
     "What constraints (time, budget, skills, compliance) must I treat as non-negotiable?",
@@ -112,8 +117,17 @@ function msg(
   };
 }
 
-function questionsFor(stage: StageId): Question[] {
+function fallbackQuestions(stage: StageId): Question[] {
   return STAGE_QUESTIONS[stage].map((prompt, i) => ({
+    id: `${stage}_q${i + 1}`,
+    stageId: stage,
+    prompt,
+    required: i < 2,
+  }));
+}
+
+function toQuestions(stage: StageId, prompts: string[]): Question[] {
+  return prompts.map((prompt, i) => ({
     id: `${stage}_q${i + 1}`,
     stageId: stage,
     prompt,
@@ -137,12 +151,12 @@ export function createEmptySession(idea: string, uploadIds: string[]): Session {
     uploadIds,
     currentStage: "problem_intake",
     stages: emptyStages(),
-    pendingQuestions: questionsFor("problem_intake"),
+    pendingQuestions: [],
     answeredQuestions: [],
     messages: [
       msg(
         "thomas",
-        `Good day, sir. I am Thomas — Tommy, if you prefer. I have received your idea and shall refrain from inventing details. ${STAGE_LABELS.problem_intake} begins with a few precise questions.`,
+        `Good day, Isaac. I am Thomas — Tommy, if you prefer. I have received your idea and shall refrain from inventing details. ${STAGE_LABELS.problem_intake} begins with a few precise questions.`,
         tone,
         "problem_intake",
       ),
@@ -234,12 +248,56 @@ export class PipelineService {
 
   async createSession(idea: string, uploadIds: string[] = []): Promise<Session> {
     const session = createEmptySession(idea.trim(), uploadIds);
+    session.pendingQuestions = await this.generateQuestions(session, "problem_intake");
     await this.adapters.store.saveSession(session);
     return session;
   }
 
   async getSession(id: string): Promise<Session | null> {
     return this.adapters.store.getSession(id);
+  }
+
+  private async generateQuestions(session: Session, stage: StageId): Promise<Question[]> {
+    const priorAnswers = session.answeredQuestions
+      .map((q) => `- [${q.stageId}] ${q.prompt}\n  A: ${q.answer}`)
+      .join("\n");
+
+    try {
+      const llm = await this.adapters.llm.complete({
+        tier: "cheap",
+        maxTokens: Math.min(1024, env.maxTokensPerStage),
+        messages: [
+          {
+            role: "system",
+            content: `${stageSystemPrompt("dry")}\n\nYou generate clarifying questions only. Output valid JSON only.`,
+          },
+          {
+            role: "user",
+            content: questionGenUserPrompt({
+              stage,
+              idea: session.idea,
+              decisions: session.decisions,
+              priorAnswers,
+            }),
+          },
+        ],
+      });
+
+      session.usage.push({
+        stageId: stage,
+        modelTier: "cheap",
+        modelName: llm.modelName,
+        estimatedInputTokens: llm.estimatedInputTokens,
+        estimatedOutputTokens: llm.estimatedOutputTokens,
+        at: now(),
+      });
+
+      const prompts = parseGeneratedQuestions(llm.text);
+      if (prompts) return toQuestions(stage, prompts);
+    } catch (err) {
+      console.warn(`Question generation failed for ${stage}; using fallback.`, err);
+    }
+    return fallbackQuestions(stage);
   }
 
   private async persist(session: Session) {
@@ -290,8 +348,8 @@ export class PipelineService {
         msg(
           "thomas",
           tone === "pointed"
-            ? `Noted, sir. A few required particulars remain before I can responsibly advance ${STAGE_LABELS[session.currentStage]}.`
-            : `Thank you, sir. A few required questions remain for ${STAGE_LABELS[session.currentStage]}.`,
+            ? `Noted, Isaac. A few required particulars remain before I can responsibly advance ${STAGE_LABELS[session.currentStage]}.`
+            : `Thank you, Isaac. A few required questions remain for ${STAGE_LABELS[session.currentStage]}.`,
           tone,
           session.currentStage,
         ),
@@ -309,7 +367,7 @@ export class PipelineService {
       session.messages.push(
         msg(
           "thomas",
-          `I would observe that required questions remain unanswered, sir. Advancing now would be guessing — which I decline to do without an explicit override.`,
+          `I would observe that required questions remain unanswered, Isaac. Advancing now would be guessing — which I decline to do without an explicit override.`,
           "dry",
           session.currentStage,
         ),
@@ -399,7 +457,7 @@ export class PipelineService {
       session.messages.push(
         msg(
           "thomas",
-          `The pipeline is complete, sir. Visual artifacts remain available for revision. I shall remember what you elect to teach me in retrospect.`,
+          `The pipeline is complete, Isaac. Visual artifacts remain available for revision. I shall remember what you elect to teach me in retrospect.`,
           tone,
           stage,
         ),
@@ -408,7 +466,7 @@ export class PipelineService {
     }
 
     session.currentStage = nxt;
-    session.pendingQuestions = questionsFor(nxt);
+    session.pendingQuestions = await this.generateQuestions(session, nxt);
     const nextRec = session.stages.find((s) => s.id === nxt)!;
     nextRec.status = "waiting_for_answers";
     session.messages.push(
@@ -425,7 +483,7 @@ export class PipelineService {
       session.messages.push(
         msg(
           "thomas",
-          `Unsolicited suggestion, sir: before we fall in love with a custom build, I would inventory off-the-shelf options for thirty focused minutes. It is frequently cheaper than dignity.`,
+          `Unsolicited suggestion, Isaac: before we fall in love with a custom build, I would inventory off-the-shelf options for thirty focused minutes. It is frequently cheaper than dignity.`,
           "dry",
           stage,
         ),
@@ -492,7 +550,7 @@ export class PipelineService {
     session.messages.push(
       msg(
         "thomas",
-        `I have prepared the Process Whiteboard, sir: ${session.artifacts.whiteboardUrl}`,
+        `I have prepared the Process Whiteboard, Isaac: ${session.artifacts.whiteboardUrl}`,
         "dry",
         "whiteboard_decomposition",
       ),
@@ -508,7 +566,7 @@ export class PipelineService {
     session.messages.push(
       msg(
         "thomas",
-        `The Solution Design Map is ready for your inspection, sir: ${session.artifacts.designMapUrl}`,
+        `The Solution Design Map is ready for your inspection, Isaac: ${session.artifacts.designMapUrl}`,
         "dry",
         "final_design_map",
       ),
@@ -536,7 +594,7 @@ export class PipelineService {
     session.messages.push(
       msg(
         "thomas",
-        `I have incorporated your whiteboard edits, sir. ${board.nodes.length} pieces are now on record. Downstream stack choices may require revisiting.`,
+        `I have incorporated your whiteboard edits, Isaac. ${board.nodes.length} pieces are now on record. Downstream stack choices may require revisiting.`,
         "dry",
         "whiteboard_decomposition",
       ),
@@ -546,7 +604,7 @@ export class PipelineService {
     const targetIdx = STAGE_ORDER.indexOf("per_piece_tech");
     if (idx > targetIdx) {
       session.currentStage = "per_piece_tech";
-      session.pendingQuestions = questionsFor("per_piece_tech");
+      session.pendingQuestions = await this.generateQuestions(session, "per_piece_tech");
       for (const s of session.stages) {
         const si = STAGE_ORDER.indexOf(s.id);
         if (si >= targetIdx) {
@@ -570,7 +628,7 @@ export class PipelineService {
     session.messages.push(
       msg(
         "thomas",
-        `Design map revisions noted, sir. I shall treat the updated decisions as authoritative unless you contradict yourself again — which remains your prerogative.`,
+        `Design map revisions noted, Isaac. I shall treat the updated decisions as authoritative unless you contradict yourself again — which remains your prerogative.`,
         "dry",
         "final_design_map",
       ),

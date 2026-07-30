@@ -41,7 +41,7 @@
 
 .toolbar button {
   background: var(--accent);
-  color: #062022;
+  color: #0a1220;
   border: none;
   padding: 0.55rem 0.9rem;
   font-weight: 600;
@@ -80,13 +80,13 @@
 }
 
 .edge {
-  stroke: rgba(94, 194, 199, 0.55);
+  stroke: rgba(91, 141, 239, 0.55);
   stroke-width: 2;
 }
 
 .node rect {
-  fill: #18232e;
-  stroke: rgba(94, 194, 199, 0.45);
+  fill: #182438;
+  stroke: rgba(91, 141, 239, 0.45);
   stroke-width: 1.5;
 }
 
@@ -155,7 +155,7 @@ input,
 textarea,
 select {
   width: 100%;
-  background: rgba(8, 12, 16, 0.7);
+  background: rgba(8, 12, 20, 0.7);
   border: 1px solid var(--line);
   color: var(--ink);
   padding: 0.55rem 0.65rem;
@@ -167,7 +167,7 @@ select {
 
 .conflicts {
   margin-bottom: 1rem;
-  border-color: rgba(212, 165, 116, 0.55);
+  border-color: rgba(126, 182, 255, 0.55);
 }
 
 .conflicts p {

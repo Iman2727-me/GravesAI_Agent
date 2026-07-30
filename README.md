@@ -35,6 +35,8 @@ infra/                # Dockerfile + deploy script (not executed yet)
 corpus/               # Future “think like me” materials
 ```
 
-## Later: GCP
+## Later: GCP / Vertex
 
-See [infra/README.md](infra/README.md) and [infra/COST.md](infra/COST.md). Scale-to-zero Cloud Run + Vertex Gemini API — no always-on GPUs.
+See [infra/README.md](infra/README.md) and [infra/COST.md](infra/COST.md).
+
+Cheap path: local API + Vertex Gemini (`THOMAS_MODE=gcp`, `us-central1`) — pay-per-token only, store on disk. Cloud Run scale-to-zero is optional later.

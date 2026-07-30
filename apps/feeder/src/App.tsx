@@ -58,7 +58,7 @@ export default function App() {
           overrideRecommendation: overrideRec,
         }));
       if (!payload.length) {
-        setError("Answer at least one question, sir — preferably the required ones.");
+        setError("Answer at least one question, Isaac — preferably the required ones.");
         return;
       }
       const s = await api.answer(session.id, payload);

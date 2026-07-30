@@ -1,7 +1,6 @@
 import { env } from "../config.js";
 import { createLocalStore } from "./localStore.js";
 import { createLocalFiles } from "./localFiles.js";
-import { createGcpStore, createGcpFiles } from "./gcpStubs.js";
 import { selectLlm } from "./llm.js";
 import type { FilesAdapter, LlmAdapter, StoreAdapter } from "./types.js";
 
@@ -12,13 +11,8 @@ export interface Adapters {
 }
 
 export function createAdapters(): Adapters {
-  if (env.mode === "gcp") {
-    return {
-      store: createGcpStore(),
-      files: createGcpFiles(),
-      llm: selectLlm(),
-    };
-  }
+  // Cheap single-user path: Vertex Gemini for LLM, local files for store/uploads
+  // until Cloud Run / Firestore / GCS deploy is explicitly requested.
   return {
     store: createLocalStore(env.dataDir),
     files: createLocalFiles(env.dataDir),

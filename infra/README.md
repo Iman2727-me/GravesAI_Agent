@@ -1,31 +1,39 @@
-# GCP infrastructure (do not run until you have a Google Cloud login)
+# GCP infrastructure (cheap, US-only, single-user)
 
-These scripts are **documentation + ready-to-run later**. Do **not** execute `gcloud` until you create an account and explicitly ask to deploy.
+Default path: **run the API on your machine** and call **Vertex Gemini** (pay-per-token). Do not deploy Cloud Run / Firestore / GCS until you explicitly want that.
 
-## Intended shape (cost-conscious)
+## Prerequisites (Vertex from local API)
 
-- **Cloud Run** service for `services/thomas-api` with **min instances = 0** (scale to zero).
+1. GCP project in the US (e.g. `gravesaiagent`), region **`us-central1`**.
+2. Enable **Vertex AI API** for the project.
+3. Authenticate:
+   ```bash
+   gcloud auth login
+   gcloud auth application-default login
+   gcloud config set project YOUR_PROJECT_ID
+   ```
+4. Copy `.env.example` → `.env` and set:
+   - `THOMAS_MODE=gcp`
+   - `GCP_PROJECT_ID=...`
+   - `GCP_REGION=us-central1`
+5. `npm run dev:api` — sessions/uploads still use `./data` (no billable storage).
+
+## Intended shape when you deploy later (still cost-conscious)
+
+- **Cloud Run** for `services/thomas-api` with **min instances = 0** (scale to zero).
 - **Vertex AI Gemini API** (pay-per-token) — no dedicated GPUs / always-on endpoints.
-- **Firestore** for sessions / process artifacts.
-- **Cloud Storage** bucket for multimodal uploads.
+- **Firestore** + **Cloud Storage** only if you need cloud persistence — same US region.
 - **Secret Manager** for credentials.
 
-## Prerequisites (later)
+## Scripts (deploy — do not run until asked)
 
-1. Create a GCP project.
-2. Install Google Cloud SDK and authenticate (`gcloud auth login`).
-3. Copy `.env.example` → `.env` and fill `GCP_PROJECT_ID`, `GCP_REGION`, `GCS_BUCKET`.
-4. Set `THOMAS_MODE=gcp` only after adapters are fully wired with official client libraries.
-
-## Scripts
-
-- [`deploy-cloud-run.sh`](./deploy-cloud-run.sh) — build and deploy API to Cloud Run (scale-to-zero). **Do not run yet.**
+- [`deploy-cloud-run.sh`](./deploy-cloud-run.sh) — build and deploy API to Cloud Run (scale-to-zero).
 - [`Dockerfile`](./Dockerfile) — container for the API.
 
-## Local mode (now)
+## Local mock (zero cost)
 
 ```bash
 THOMAS_MODE=local
 ```
 
-Uses `./data` for sessions, whiteboards, design maps, and uploads. Mock LLM — no Vertex calls, no billable GCP resources.
+Uses `./data` and the mock LLM — no Vertex calls, no billable GCP resources.
