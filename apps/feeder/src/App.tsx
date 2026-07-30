@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
-import type { Session } from "@thomas/shared";
+import type { Question, Session } from "@thomas/shared";
 import { STAGE_LABELS, STAGE_ORDER } from "@thomas/shared";
 import { api } from "./api";
 import "./app.css";
+
+const CUSTOM = "__custom__";
 
 export default function App() {
   const [idea, setIdea] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [session, setSession] = useState<Session | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [selected, setSelected] = useState<string | null>(null);
+  const [customText, setCustomText] = useState("");
   const [overrideRec, setOverrideRec] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     if (!session) return;
@@ -26,6 +30,18 @@ export default function App() {
     return () => clearInterval(t);
   }, [session?.id]);
 
+  function resetChoice() {
+    setSelected(null);
+    setCustomText("");
+    setOverrideRec(false);
+  }
+
+  function resolvedAnswer(): string {
+    if (!selected) return "";
+    if (selected === CUSTOM) return customText.trim();
+    return selected;
+  }
+
   async function start() {
     setBusy(true);
     setError(null);
@@ -37,7 +53,7 @@ export default function App() {
       }
       const s = await api.createSession(idea, uploadIds);
       setSession(s);
-      setAnswers({});
+      resetChoice();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -45,26 +61,25 @@ export default function App() {
     }
   }
 
-  async function submitAnswers() {
+  async function submitChoice(question: Question) {
     if (!session) return;
+    const answer = resolvedAnswer();
+    if (!answer) {
+      setError("Pick an option, Isaac.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      const payload = session.pendingQuestions
-        .filter((q) => (answers[q.id] ?? "").trim())
-        .map((q) => ({
-          questionId: q.id,
-          answer: answers[q.id]!.trim(),
+      const s = await api.answer(session.id, [
+        {
+          questionId: question.id,
+          answer,
           overrideRecommendation: overrideRec,
-        }));
-      if (!payload.length) {
-        setError("Answer at least one question, Isaac — preferably the required ones.");
-        return;
-      }
-      const s = await api.answer(session.id, payload);
+        },
+      ]);
       setSession(s);
-      setAnswers({});
-      setOverrideRec(false);
+      resetChoice();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -72,12 +87,23 @@ export default function App() {
     }
   }
 
-  async function advance() {
-    if (!session) return;
+  async function pickAndSubmit(question: Question, option: string) {
+    if (busy) return;
+    setSelected(option);
+    // Non-custom options submit immediately for a lighter feel.
+    if (option === CUSTOM) return;
     setBusy(true);
+    setError(null);
     try {
-      const s = await api.advance(session.id);
+      const s = await api.answer(session!.id, [
+        {
+          questionId: question.id,
+          answer: option,
+          overrideRecommendation: overrideRec,
+        },
+      ]);
       setSession(s);
+      resetChoice();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -86,15 +112,16 @@ export default function App() {
   }
 
   const stageIdx = session ? STAGE_ORDER.indexOf(session.currentStage) : -1;
+  const currentQuestion = session?.pendingQuestions[0];
+  const stageRec = session?.stages.find((s) => s.id === session.currentStage);
+  const verdict = stageRec?.latestVerdict;
 
   return (
     <div className="shell">
       <header className="hero">
         <p className="eyebrow">Process development agent</p>
         <h1>Thomas</h1>
-        <p className="tag">
-          Feed an idea. I shall interrogate it properly in the background. Tommy, if you prefer.
-        </p>
+        <p className="tag">I think it through. You pick. One short choice at a time.</p>
       </header>
 
       {!session ? (
@@ -102,8 +129,8 @@ export default function App() {
           <label htmlFor="idea">Idea</label>
           <textarea
             id="idea"
-            rows={6}
-            placeholder="Describe the problem or idea. Images, sheets, and other files welcome."
+            rows={5}
+            placeholder="Describe the problem or idea. Attachments welcome."
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
           />
@@ -130,43 +157,37 @@ export default function App() {
         </section>
       ) : (
         <div className="workspace">
-          <aside className="panel stages">
-            <h2>Pipeline</h2>
-            <ol>
+          <aside className="panel progress-rail">
+            <p className="progress-label">
+              Step {Math.max(1, stageIdx + 1)} of {STAGE_ORDER.length}
+            </p>
+            <div className="progress-dots" aria-label="Pipeline progress">
               {STAGE_ORDER.map((id, i) => {
                 const rec = session.stages.find((s) => s.id === id);
+                const cls =
+                  i === stageIdx ? "current" : rec?.status === "complete" || rec?.status === "skipped" ? "done" : "";
                 return (
-                  <li
+                  <span
                     key={id}
-                    className={
-                      i === stageIdx ? "current" : rec?.status === "complete" ? "done" : ""
-                    }
-                  >
-                    <span>{STAGE_LABELS[id]}</span>
-                    <small>{rec?.status ?? "pending"}</small>
-                  </li>
+                    className={`dot ${cls}`}
+                    title={STAGE_LABELS[id]}
+                  />
                 );
               })}
-            </ol>
+            </div>
+            <p className="progress-stage">{STAGE_LABELS[session.currentStage]}</p>
             <div className="artifacts">
               {session.artifacts.whiteboardUrl && (
                 <a href={session.artifacts.whiteboardUrl} target="_blank" rel="noreferrer">
-                  Open Process Whiteboard
+                  Whiteboard
                 </a>
               )}
               {session.artifacts.designMapUrl && (
                 <a href={session.artifacts.designMapUrl} target="_blank" rel="noreferrer">
-                  Open Solution Design Map
+                  Design map
                 </a>
               )}
             </div>
-            <p className="usage">
-              Token estimate:{" "}
-              {session.usage.reduce(
-                (n, u) => n + u.estimatedInputTokens + u.estimatedOutputTokens,
-                0,
-              )}
-            </p>
           </aside>
 
           <main className="panel main">
@@ -175,60 +196,102 @@ export default function App() {
               <p>{session.idea}</p>
             </div>
 
-            <div className="messages">
-              {session.messages.map((m) => (
-                <article key={m.id} className={`msg ${m.role} ${m.tone}`}>
-                  <header>
-                    <span>{m.role === "thomas" ? "Thomas" : "You"}</span>
-                    {m.tone === "pointed" && <em>pointed</em>}
-                  </header>
-                  <p>{m.content}</p>
-                </article>
-              ))}
-            </div>
+            {busy && (
+              <p className="thinking" aria-live="polite">
+                Thomas is thinking…
+              </p>
+            )}
 
-            {session.pendingQuestions.length > 0 && (
-              <section className="questions">
-                <h2>{STAGE_LABELS[session.currentStage]}</h2>
-                {session.pendingQuestions.map((q) => (
-                  <label key={q.id} className="q">
-                    <span>
-                      {q.prompt}
-                      {q.required ? " *" : ""}
-                    </span>
+            {!busy && currentQuestion && (
+              <section className="focus-card">
+                <p className="focus-stage">{STAGE_LABELS[session.currentStage]}</p>
+                {verdict && <p className="verdict">{verdict}</p>}
+                <h2 className="focus-prompt">{currentQuestion.prompt}</h2>
+                <div className="choice-grid" role="radiogroup" aria-label={currentQuestion.prompt}>
+                  {(currentQuestion.options?.length
+                    ? currentQuestion.options
+                    : ["Accept my recommendation", "I will change it"]
+                  ).map((opt) => {
+                    const isRec = opt === currentQuestion.recommendedOption;
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        disabled={busy}
+                        className={`choice${selected === opt ? " selected" : ""}${isRec ? " recommended" : ""}`}
+                        onClick={() => pickAndSubmit(currentQuestion, opt)}
+                      >
+                        <span>{opt}</span>
+                        {isRec && <em>Thomas recommends</em>}
+                      </button>
+                    );
+                  })}
+                  {currentQuestion.allowCustom !== false && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className={`choice ghost-choice${selected === CUSTOM ? " selected" : ""}`}
+                      onClick={() => setSelected(CUSTOM)}
+                    >
+                      Other
+                    </button>
+                  )}
+                </div>
+
+                {selected === CUSTOM && (
+                  <div className="custom-block">
                     <textarea
                       rows={2}
-                      value={answers[q.id] ?? ""}
-                      onChange={(e) =>
-                        setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
-                      }
+                      placeholder="Your answer…"
+                      value={customText}
+                      onChange={(e) => setCustomText(e.target.value)}
                     />
-                  </label>
-                ))}
+                    <button
+                      disabled={busy || !customText.trim()}
+                      onClick={() => submitChoice(currentQuestion)}
+                    >
+                      Submit
+                    </button>
+                  </div>
+                )}
+
                 <label className="override">
                   <input
                     type="checkbox"
                     checked={overrideRec}
                     onChange={(e) => setOverrideRec(e.target.checked)}
                   />
-                  Override Thomas’s recommendation for this stage
+                  Override recommendation
                 </label>
-                <div className="actions">
-                  <button disabled={busy} onClick={submitAnswers}>
-                    Submit answers
-                  </button>
-                  <button className="ghost" disabled={busy} onClick={advance}>
-                    Advance stage
-                  </button>
-                </div>
               </section>
             )}
 
-            {session.status === "complete" && (
-              <p className="complete">
-                Pipeline complete. Visuals remain available for revision.
-              </p>
+            {!busy && !currentQuestion && session.status === "active" && (
+              <p className="thinking">Thomas is thinking…</p>
             )}
+
+            {session.status === "complete" && (
+              <p className="complete">Done. Visuals remain available for revision.</p>
+            )}
+
+            <details
+              className="history"
+              open={historyOpen}
+              onToggle={(e) => setHistoryOpen((e.target as HTMLDetailsElement).open)}
+            >
+              <summary>History</summary>
+              <div className="messages">
+                {session.messages.map((m) => (
+                  <article key={m.id} className={`msg ${m.role} ${m.tone}`}>
+                    <header>
+                      <span>{m.role === "thomas" ? "Thomas" : "You"}</span>
+                      {m.tone === "pointed" && <em>pointed</em>}
+                    </header>
+                    <p>{m.content}</p>
+                  </article>
+                ))}
+              </div>
+            </details>
           </main>
         </div>
       )}

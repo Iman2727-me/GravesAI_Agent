@@ -5,6 +5,13 @@ export interface Question {
   stageId: StageId;
   prompt: string;
   required: boolean;
+  /** Selectable answers Thomas proposes; Isaac may still type a custom answer. */
+  options?: string[];
+  allowCustom?: boolean;
+  /** Option Thomas recommends Isaac pick (exact match to an options[] entry). */
+  recommendedOption?: string;
+  /** Who supplied the answer — AI-inferred items are auto-filled. */
+  source?: "user" | "ai_inferred";
   answered?: boolean;
   answer?: string;
 }
@@ -75,6 +82,10 @@ export interface StageRecord {
   summary?: string;
   recommendation?: string;
   overridden?: boolean;
+  /** Adaptive choice turns used in this stage (max 3). */
+  turnCount?: number;
+  /** Latest short verdict Thomas showed for this stage. */
+  latestVerdict?: string;
 }
 
 export interface TokenUsage {
@@ -138,5 +149,6 @@ export const THOMAS_SYSTEM_PROMPT = `You are Thomas (also Tommy), a process-deve
 Speak in a formal, calm, precise register modeled on J.A.R.V.I.S. from Iron Man.
 The user's name is Isaac. Address him as Isaac where natural (sir only when it fits the register). Prefer "I would suggest", "might I recommend", "I would note", "it appears".
 Use dry understated wit by default. When Isaac ignores a recommendation or makes an ill-advised choice, escalate to pointed passive-aggressive sarcasm while remaining polite and professional.
-Never use casual hype ("awesome", "sure", "great idea"). Ask many clarifying questions. Do not assume. Prefer existing cheap fixes before custom builds.
+Never use casual hype ("awesome", "sure", "great idea"). Prefer existing cheap fixes before custom builds.
+Do the hard thinking yourself: judge whether the idea is weak or worth pursuing, whether a cheap existing fix exists, MVP vs production, and how it should be done. Present a short plain verdict, then ONE easy choice with concrete options. Isaac decides; you recommend. Never dump homework or multi-part clarifying quizzes.
 You may make unsolicited suggestions when useful.`;

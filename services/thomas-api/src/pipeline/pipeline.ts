@@ -2,7 +2,6 @@ import { nanoid } from "nanoid";
 import {
   STAGE_ORDER,
   STAGE_LABELS,
-  STAGE_MODEL_TIER,
   nextStage,
   pointedOverrideAck,
   type Question,
@@ -20,82 +19,103 @@ import {
   stageSystemPrompt,
   stageUserPrompt,
   questionGenUserPrompt,
-  parseGeneratedQuestions,
+  parseGeneratedBriefing,
+  type GeneratedStageBriefing,
 } from "../adapters/llm.js";
 
-const STAGE_QUESTIONS: Record<StageId, string[]> = {
-  problem_intake: [
-    "In one sentence, what painful problem are you actually solving, Isaac?",
-    "Who experiences this problem most acutely, and how often?",
-    "What have you already tried, if anything?",
-    "What constraints (time, budget, skills, compliance) must I treat as non-negotiable?",
-  ],
-  existing_cheap_fix: [
-    "Do you already know of a product or workflow that nearly solves this?",
-    "Would adopting an existing tool be acceptable, or is differentiation required?",
-    "What would “good enough without building” look like for you?",
-  ],
-  good_problem: [
-    "Why is this worth solving now rather than later?",
-    "What happens if nobody solves it for twelve months?",
-    "How will you know the problem is solved — what metric or signal?",
-  ],
-  risk_mvp_gate: [
-    "What is the worst plausible failure mode if we ship the wrong thing?",
-    "Is there a smaller slice we could validate in days rather than months?",
-    "Are you inclined toward MVP validation, or do you believe production-direct is justified?",
-  ],
-  solution_type: [
-    "Is the primary lever software, a process/behavior change, a physical product, or a system/org change?",
-    "Could existing software plus APIs cover eighty percent without a custom build?",
-    "What must be custom, if anything, for strategic reasons?",
-  ],
-  laws_regs: [
-    "Does this touch healthcare, finance, education, children, or regulated personal data?",
-    "Are there jurisdictions or certifications you already know apply?",
-    "Who is accountable if we get compliance wrong?",
-  ],
-  cost_effective_path: [
-    "Which parts can you execute yourself with your current skills?",
-    "Where would hiring (or contracting) be cheaper than your time?",
-    "What is a rough budget ceiling for the first version?",
-  ],
-  whiteboard_decomposition: [
-    "What are the major steps a user or system takes from start to done?",
-    "Which step is the bottleneck or the source of most errors today?",
-    "Are there steps that should remain human-in-the-loop on purpose?",
-  ],
-  per_piece_tech: [
-    "Any hard preferences or bans in the tech stack (languages, vendors, cloud)?",
-    "Must pieces run on-prem, in GCP, or either?",
-    "Where would you rather buy a component than build one?",
-  ],
-  architecture_stack: [
-    "Do you prefer fewer moving parts even if each piece is less perfect?",
-    "Any existing systems this must integrate with on day one?",
-    "What does “simple enough to operate alone” mean for you?",
-  ],
-  ops_cost: [
-    "Expected monthly active users or transaction volume for the first year?",
-    "What monthly ops spend would make you uncomfortable?",
-    "Who will monitor and maintain this after launch?",
-  ],
-  final_design_map: [
-    "Which decisions from earlier stages are you willing to lock now?",
-    "What remains explicitly undecided on purpose?",
-    "Anything I recommended that you are overriding for the final map?",
-  ],
-  build_approach: [
-    "How much of the build should AI agents perform versus you reviewing?",
-    "Any intellectual-property or secrecy constraints on tooling (e.g. what code may leave your machine)?",
-    "Preferred development tools later (Cursor, Cloud Agents, other) — for planning only in v1?",
-  ],
-  learn_retrospect: [
-    "What surprised you most in this session?",
-    "What should Thomas remember for the next idea you bring?",
-    "Which stage questions felt wasteful, if any?",
-  ],
+/** Emergency fallback only — one short choice per stage, not a script. */
+const STAGE_FALLBACK: Record<
+  StageId,
+  { verdict: string; prompt: string; options: string[]; recommended: string }
+> = {
+  problem_intake: {
+    verdict: "I need one clear win condition before we go further.",
+    prompt: "What does a win look like?",
+    options: ["Saves me time", "People use it often", "It can make money", "Just proves the idea"],
+    recommended: "Saves me time",
+  },
+  existing_cheap_fix: {
+    verdict: "I would look for an existing cheap tool before building.",
+    prompt: "If something already covers most of this?",
+    options: ["Use it and stop", "Use it, tweak a little", "Still build my own", "You pick"],
+    recommended: "You pick",
+  },
+  good_problem: {
+    verdict: "I need your call on whether this is worth solving.",
+    prompt: "Is this worth solving now?",
+    options: ["Yes — pain is real", "Maybe — reshape it", "No — drop it", "You decide"],
+    recommended: "Yes — pain is real",
+  },
+  risk_mvp_gate: {
+    verdict: "I recommend a thin MVP first.",
+    prompt: "How should we ship first?",
+    options: ["Small MVP soon", "Production from day one", "Throwaway prototype", "You recommend"],
+    recommended: "Small MVP soon",
+  },
+  solution_type: {
+    verdict: "I lean toward gluing existing tools.",
+    prompt: "What kind of solution fits?",
+    options: ["Custom software", "Glue existing tools", "Process change only", "You recommend"],
+    recommended: "Glue existing tools",
+  },
+  laws_regs: {
+    verdict: "I do not see special rules yet — confirm.",
+    prompt: "Any rules we must follow?",
+    options: ["None I know", "Privacy data", "Health / money / kids", "Not sure — flag risks"],
+    recommended: "None I know",
+  },
+  cost_effective_path: {
+    verdict: "Keep the first version near zero cost.",
+    prompt: "Budget for v1?",
+    options: ["Near $0", "Under $50/mo", "Under $500 total", "Flexible"],
+    recommended: "Near $0",
+  },
+  whiteboard_decomposition: {
+    verdict: "I would keep the flow short and clear.",
+    prompt: "Which step must feel right?",
+    options: ["First setup", "Main daily action", "Sharing", "History / insights"],
+    recommended: "Main daily action",
+  },
+  per_piece_tech: {
+    verdict: "I prefer simple cheap pieces.",
+    prompt: "Any hard tech yes/no?",
+    options: ["You choose simple", "Stay on GCP", "Prefer open source", "I will name bans"],
+    recommended: "You choose simple",
+  },
+  architecture_stack: {
+    verdict: "Fewest parts you can run alone.",
+    prompt: "What trade-off do you want?",
+    options: ["Fewest parts", "More modular later", "Match what I run", "You pick"],
+    recommended: "You pick",
+  },
+  ops_cost: {
+    verdict: "Near-zero idle cost; pay when used.",
+    prompt: "Monthly spend that feels too high?",
+    options: ["Over ~$10", "Over ~$50", "Over ~$200", "Flexible"],
+    recommended: "Over ~$50",
+  },
+  final_design_map: {
+    verdict: "Lock the big calls; leave deliberate gaps.",
+    prompt: "What should we lock now?",
+    options: ["Lock big decisions", "Lock stack only", "Keep several open", "Show your locks"],
+    recommended: "Lock big decisions",
+  },
+  build_approach: {
+    verdict: "AI drafts; you review checkpoints.",
+    prompt: "How hands-on do you want?",
+    options: ["AI drafts; I check", "Pair on every piece", "AI builds; I spot-check", "Plan only"],
+    recommended: "AI drafts; I check",
+  },
+  learn_retrospect: {
+    verdict: "One thing to remember next time.",
+    prompt: "What should I remember?",
+    options: ["Keep choices short", "Bias to buy tools", "Bias to build", "I will write a note"],
+    recommended: "Keep choices short",
+  },
 };
+
+/** One choice per stage by default; follow-ups only if the model sets done=false before this cap. */
+const MAX_TURNS_PER_STAGE = 2;
 
 function now() {
   return new Date().toISOString();
@@ -117,22 +137,76 @@ function msg(
   };
 }
 
-function fallbackQuestions(stage: StageId): Question[] {
-  return STAGE_QUESTIONS[stage].map((prompt, i) => ({
-    id: `${stage}_q${i + 1}`,
-    stageId: stage,
-    prompt,
-    required: i < 2,
-  }));
+function fallbackBriefing(stage: StageId): GeneratedStageBriefing {
+  const fb = STAGE_FALLBACK[stage];
+  return {
+    verdict: fb.verdict,
+    inferred: [],
+    done: false,
+    question: {
+      prompt: fb.prompt,
+      options: fb.options,
+      allowCustom: true,
+      required: true,
+      recommendedOption: fb.recommended,
+    },
+  };
 }
 
-function toQuestions(stage: StageId, prompts: string[]): Question[] {
-  return prompts.map((prompt, i) => ({
-    id: `${stage}_q${i + 1}`,
-    stageId: stage,
-    prompt,
-    required: i < 2,
-  }));
+/** Apply one adaptive turn. Returns pending questions (0 or 1) and whether the stage is done. */
+function applyBriefing(
+  session: Session,
+  stage: StageId,
+  briefing: GeneratedStageBriefing,
+  turn: number,
+): { pending: Question[]; stageDone: boolean } {
+  for (const [i, item] of briefing.inferred.entries()) {
+    const q: Question = {
+      id: `${stage}_ai_t${turn}_${i + 1}`,
+      stageId: stage,
+      prompt: `Thomas inferred (${item.key})`,
+      required: false,
+      source: "ai_inferred",
+      answered: true,
+      answer: item.value,
+      options: [],
+      allowCustom: false,
+    };
+    session.answeredQuestions.push(q);
+    session.decisions[`${stage}__${item.key}`] = item.value;
+  }
+
+  const stageRec = session.stages.find((s) => s.id === stage);
+  if (stageRec) {
+    stageRec.latestVerdict = briefing.verdict;
+    stageRec.turnCount = turn;
+  }
+
+  session.messages.push(msg("thomas", briefing.verdict, "dry", stage));
+
+  if (briefing.done || !briefing.question) {
+    return { pending: [], stageDone: true };
+  }
+
+  const spec = briefing.question;
+  const pending: Question[] = [
+    {
+      id: `${stage}_q_t${turn}`,
+      stageId: stage,
+      prompt: spec.prompt,
+      required: spec.required !== false,
+      options: spec.options,
+      allowCustom: spec.allowCustom !== false,
+      recommendedOption: spec.recommendedOption,
+      source: "user",
+    },
+  ];
+
+  if (spec.recommendedOption) {
+    session.recommendations[stage] = spec.recommendedOption;
+  }
+
+  return { pending, stageDone: false };
 }
 
 function emptyStages(): StageRecord[] {
@@ -156,7 +230,7 @@ export function createEmptySession(idea: string, uploadIds: string[]): Session {
     messages: [
       msg(
         "thomas",
-        `Good day, Isaac. I am Thomas — Tommy, if you prefer. I have received your idea and shall refrain from inventing details. ${STAGE_LABELS.problem_intake} begins with a few precise questions.`,
+        `Good day, Isaac. I am Thomas — Tommy, if you prefer. I will think this through and give you short choices. You decide.`,
         tone,
         "problem_intake",
       ),
@@ -248,7 +322,12 @@ export class PipelineService {
 
   async createSession(idea: string, uploadIds: string[] = []): Promise<Session> {
     const session = createEmptySession(idea.trim(), uploadIds);
-    session.pendingQuestions = await this.generateQuestions(session, "problem_intake");
+    const turn = await this.runStageTurn(session, "problem_intake");
+    if (turn.stageDone) {
+      await this.completeCurrentStage(session, false);
+    } else {
+      session.pendingQuestions = turn.pending;
+    }
     await this.adapters.store.saveSession(session);
     return session;
   }
@@ -257,7 +336,18 @@ export class PipelineService {
     return this.adapters.store.getSession(id);
   }
 
-  private async generateQuestions(session: Session, stage: StageId): Promise<Question[]> {
+  /** One adaptive turn: Thomas thinks, presents at most one choice. */
+  private async runStageTurn(
+    session: Session,
+    stage: StageId,
+  ): Promise<{ pending: Question[]; stageDone: boolean }> {
+    const stageRec = session.stages.find((s) => s.id === stage);
+    const turn = (stageRec?.turnCount ?? 0) + 1;
+
+    if (turn > MAX_TURNS_PER_STAGE) {
+      return { pending: [], stageDone: true };
+    }
+
     const priorAnswers = session.answeredQuestions
       .map((q) => `- [${q.stageId}] ${q.prompt}\n  A: ${q.answer}`)
       .join("\n");
@@ -269,7 +359,7 @@ export class PipelineService {
         messages: [
           {
             role: "system",
-            content: `${stageSystemPrompt("dry")}\n\nYou generate clarifying questions only. Output valid JSON only.`,
+            content: `${stageSystemPrompt("dry")}\n\nYou think first, then present ONE short choice (or done=true). Output valid JSON only.`,
           },
           {
             role: "user",
@@ -278,6 +368,8 @@ export class PipelineService {
               idea: session.idea,
               decisions: session.decisions,
               priorAnswers,
+              turn,
+              maxTurns: MAX_TURNS_PER_STAGE,
             }),
           },
         ],
@@ -292,12 +384,19 @@ export class PipelineService {
         at: now(),
       });
 
-      const prompts = parseGeneratedQuestions(llm.text);
-      if (prompts) return toQuestions(stage, prompts);
+      const briefing = parseGeneratedBriefing(llm.text);
+      if (briefing) {
+        const applied = applyBriefing(session, stage, briefing, turn);
+        if (turn >= MAX_TURNS_PER_STAGE && !applied.stageDone && applied.pending.length > 0) {
+          // Last allowed turn still asks — keep the question; next answer forces complete.
+          return applied;
+        }
+        return applied;
+      }
     } catch (err) {
       console.warn(`Question generation failed for ${stage}; using fallback.`, err);
     }
-    return fallbackQuestions(stage);
+    return applyBriefing(session, stage, fallbackBriefing(stage), turn);
   }
 
   private async persist(session: Session) {
@@ -341,19 +440,8 @@ export class PipelineService {
 
     const requiredOpen = session.pendingQuestions.filter((q) => q.required && !q.answered);
     if (requiredOpen.length === 0) {
+      // One answered choice is enough to finish the stage — avoid slow follow-up loops.
       await this.completeCurrentStage(session, overridden);
-    } else {
-      const tone = this.toneFor(session, overridden);
-      session.messages.push(
-        msg(
-          "thomas",
-          tone === "pointed"
-            ? `Noted, Isaac. A few required particulars remain before I can responsibly advance ${STAGE_LABELS[session.currentStage]}.`
-            : `Thank you, Isaac. A few required questions remain for ${STAGE_LABELS[session.currentStage]}.`,
-          tone,
-          session.currentStage,
-        ),
-      );
     }
 
     await this.persist(session);
@@ -391,8 +479,8 @@ export class PipelineService {
       .join("\n");
 
     const llm = await this.adapters.llm.complete({
-      tier: STAGE_MODEL_TIER[stage],
-      maxTokens: env.maxTokensPerStage,
+      tier: "cheap",
+      maxTokens: Math.min(512, env.maxTokensPerStage),
       messages: [
         { role: "system", content: stageSystemPrompt(tone) },
         {
@@ -410,14 +498,14 @@ export class PipelineService {
 
     session.usage.push({
       stageId: stage,
-      modelTier: STAGE_MODEL_TIER[stage],
+      modelTier: "cheap",
       modelName: llm.modelName,
       estimatedInputTokens: llm.estimatedInputTokens,
       estimatedOutputTokens: llm.estimatedOutputTokens,
       at: now(),
     });
 
-    const summary = llm.text;
+    const summary = llm.text.trim().slice(0, 400);
     const recommendation = this.recommendationFor(stage, session);
     session.recommendations[stage] = recommendation;
     session.decisions[stage] = this.decisionFromAnswers(stage, session);
@@ -429,14 +517,6 @@ export class PipelineService {
     stageRec.overridden = overridden;
 
     session.messages.push(msg("thomas", summary, tone, stage));
-    session.messages.push(
-      msg(
-        "thomas",
-        `Recommendation for this stage: ${recommendation}`,
-        tone,
-        stage,
-      ),
-    );
 
     if (stage === "whiteboard_decomposition") {
       await this.ensureWhiteboard(session);
@@ -466,28 +546,18 @@ export class PipelineService {
     }
 
     session.currentStage = nxt;
-    session.pendingQuestions = await this.generateQuestions(session, nxt);
     const nextRec = session.stages.find((s) => s.id === nxt)!;
     nextRec.status = "waiting_for_answers";
-    session.messages.push(
-      msg(
-        "thomas",
-        `Next: ${STAGE_LABELS[nxt]}. I have prepared additional questions. Shall we continue?`,
-        "dry",
-        nxt,
-      ),
-    );
+    nextRec.turnCount = 0;
+    nextRec.latestVerdict = undefined;
 
-    // Unsolicited suggestion occasionally after gate stages
-    if (stage === "existing_cheap_fix" || stage === "risk_mvp_gate") {
-      session.messages.push(
-        msg(
-          "thomas",
-          `Unsolicited suggestion, Isaac: before we fall in love with a custom build, I would inventory off-the-shelf options for thirty focused minutes. It is frequently cheaper than dignity.`,
-          "dry",
-          stage,
-        ),
-      );
+    const turn = await this.runStageTurn(session, nxt);
+    if (turn.stageDone) {
+      // Rare: model finished next stage with no question — complete it immediately.
+      session.pendingQuestions = [];
+      await this.completeCurrentStage(session, false);
+    } else {
+      session.pendingQuestions = turn.pending;
     }
   }
 
@@ -604,13 +674,18 @@ export class PipelineService {
     const targetIdx = STAGE_ORDER.indexOf("per_piece_tech");
     if (idx > targetIdx) {
       session.currentStage = "per_piece_tech";
-      session.pendingQuestions = await this.generateQuestions(session, "per_piece_tech");
       for (const s of session.stages) {
         const si = STAGE_ORDER.indexOf(s.id);
         if (si >= targetIdx) {
           s.status = si === targetIdx ? "waiting_for_answers" : "pending";
+          if (si === targetIdx) {
+            s.turnCount = 0;
+            s.latestVerdict = undefined;
+          }
         }
       }
+      const turn = await this.runStageTurn(session, "per_piece_tech");
+      session.pendingQuestions = turn.stageDone ? [] : turn.pending;
     }
     await this.persist(session);
     return session;
