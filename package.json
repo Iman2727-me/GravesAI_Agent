@@ -1,0 +1,22 @@
+{
+  "name": "thomas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Thomas (Tommy) — process development and visual modeling AI agent",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @thomas/api & npm run dev -w @thomas/feeder & npm run dev -w @thomas/visuals",
+    "dev:api": "npm run dev -w @thomas/api",
+    "dev:feeder": "npm run dev -w @thomas/feeder",
+    "dev:visuals": "npm run dev -w @thomas/visuals",
+    "build": "npm run build -w @thomas/shared && npm run build -w @thomas/api && npm run build -w @thomas/feeder && npm run build -w @thomas/visuals",
+    "typecheck": "npm run typecheck -w @thomas/shared && npm run typecheck -w @thomas/api && npm run typecheck -w @thomas/feeder && npm run typecheck -w @thomas/visuals"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
