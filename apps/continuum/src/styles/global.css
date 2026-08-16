@@ -650,8 +650,7 @@ main {
   overflow: hidden;
 }
 
-.risk-meter > span {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, var(--sea), var(--amber), var(--rose));
+.option-card.selected {
+  border-color: rgba(14, 124, 134, 0.45);
+  background: rgba(14, 124, 134, 0.08);
 }

@@ -3,17 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -p tsconfig.json && vite build",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "preview": "vite preview"
-  },
   "dependencies": {
+    "@graves/bio-engines": "*",
     "@graves/upm-shared": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json && vite build",
+    "build:pages": "tsc -p tsconfig.json && GITHUB_PAGES=1 vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "preview": "vite preview"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
