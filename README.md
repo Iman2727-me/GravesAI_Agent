@@ -1,42 +1,64 @@
-# Thomas (Tommy)
+# Thomas (Tommy) — process agent
+# Graves Continuum — Universal Personalized Medicine platform
 
-Headless process-development and visual-modeling AI agent. Thin React feeder UI; thinking runs in the backend. Named Thomas — also answers to Tommy.
+## Graves Continuum (production UPM platform)
 
-## v1 scope
+Continuum operationalizes the five-stage universal personalized medicine blueprint:
 
-- Question-heavy 14-stage thinking pipeline (Graves process)
-- Two editable visual UIs: **Process Whiteboard** and **Solution Design Map**
-- Local-first backend (file store + mock LLM) — no GCP login required
-- GCP-ready adapters and deploy scripts — **do not run `gcloud` until you have an account**
-- J.A.R.V.I.S.-matched personality: formal, dry wit; pointed sarcasm when you override recommendations
+1. Continuous multi-omic biosensing & diagnostic ingestion  
+2. Federated data processing & trans-ancestry risk profiling  
+3. Biological digital twin simulation (SDE)  
+4. Preclinical organoid validation & neoantigen therapy design  
+5. Outcomes-based reimbursement (OBRSA) & closed-loop feedback  
 
-## Quick start (local)
+### Quick start
 
 ```bash
-cp .env.example .env   # already defaults to THOMAS_MODE=local
 npm install
+npm run build:continuum   # shared + engines + api types
+npm run dev:continuum-api # http://localhost:8790
+npm run dev:continuum     # http://localhost:5175
+```
+
+Open http://localhost:5175 — use the seeded cohort (Amara Okonkwo, Li Wei, Sofía Méndez) or admit a new patient. Each patient dossier runs real engines:
+
+| Engine | What it computes |
+|---|---|
+| Trans-ancestry PRS | `Σ_j Σ_k w_jk · β_jk · X_ij` blended by admixture |
+| Digital Twin | Euler–Maruyama integration of `dS = f(S,θ,E)dt + G(S)dW` |
+| Diagnostic router | NGS / DETECTR / SHERLOCK / liquid biopsy selection |
+| Liquid biopsy MRD | log(AF) OLS kinetics, doubling time, clearance probability |
+| Neoantigen rank | MHC-I binding IC50 + immunogenicity → mRNA/SLP/exosome |
+| Organoid gate | PERK-CHOP / IRE1-XBP1s stress + viability |
+| Federated Beacon | Aggregate thresholding against membership inference |
+| OBRSA | Tiered manufacturer rebates on missed molecular milestones |
+
+### Layout
+
+```
+apps/continuum            # Clinical console (Vite/React)
+services/continuum-api    # Express API on :8790
+packages/bio-engines      # Pure scientific engines + tests
+packages/upm-shared       # Shared domain types
+data/continuum            # Local patient / contract store
+```
+
+### Tests
+
+```bash
+npm run test:engines
+```
+
+---
+
+## Thomas (legacy process agent)
+
+Thin React feeder + visuals; 14-stage Graves thinking pipeline.
+
+```bash
 npm run dev:api        # http://localhost:8787
 npm run dev:feeder     # http://localhost:5173
 npm run dev:visuals    # http://localhost:5174
 ```
 
-1. Open the feeder and submit an idea (optional file attachments).
-2. Answer Thomas’s questions; check “Override recommendation” to hear pointed tone.
-3. After whiteboard / final design stages, open the visual links to edit and “Ask Thomas to revise.”
-
-## Layout
-
-```
-apps/feeder           # Intake + Q&A
-apps/visuals          # Whiteboard + Solution Design Map
-services/thomas-api   # Express API (Cloud Run–shaped)
-packages/shared       # Stages, types, personality
-infra/                # Dockerfile + deploy script (not executed yet)
-corpus/               # Future “think like me” materials
-```
-
-## Later: GCP / Vertex
-
-See [infra/README.md](infra/README.md) and [infra/COST.md](infra/COST.md).
-
-Cheap path: local API + Vertex Gemini (`THOMAS_MODE=gcp`, `us-central1`) — pay-per-token only, store on disk. Cloud Run scale-to-zero is optional later.
+See prior commits for Thomas personality / Vertex adapters. GCP notes remain in [infra/README.md](infra/README.md).

@@ -1,0 +1,28 @@
+plugins = []
+headers = []
+redirects = []
+
+[functions]
+
+[functions."*"]
+
+[build]
+publish = "/Users/isaac/Desktop/GravesAI_Agent/apps/continuum/apps/continuum/dist"
+publishOrigin = "ui"
+commandOrigin = "ui"
+base = "/Users/isaac/Desktop/GravesAI_Agent/apps/continuum"
+command = "npm --workspace @graves/continuum run build"
+
+[build.environment]
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
