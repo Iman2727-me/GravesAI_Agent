@@ -82,6 +82,129 @@ export function buildSeedPatients(): PatientRecord[] {
   const now = new Date().toISOString();
   return [
     {
+      id: "pt-isaac",
+      mrn: "MRN-100001",
+      displayName: "Isaac",
+      sex: "male",
+      birthYear: 2004,
+      // Demo defaults for unknown ancestry: generic US college-age male placeholder
+      ancestry: [
+        { label: "EUR", proportion: 0.68 },
+        { label: "AMR", proportion: 0.14 },
+        { label: "AFR", proportion: 0.1 },
+        { label: "SAS", proportion: 0.08 },
+      ],
+      hlaAlleles: ["HLA-A*02:01", "HLA-B*08:01", "HLA-C*07:01"],
+      lifecycleStage: "intake",
+      genotype: [
+        { locusId: "rs429358", dosage: 0 },
+        { locusId: "rs7412", dosage: 1 },
+        { locusId: "rs2981582", dosage: 0 },
+        { locusId: "rs1042522", dosage: 1 },
+        { locusId: "rs1801282", dosage: 1 },
+        { locusId: "rs7903146", dosage: 1 },
+        { locusId: "rs13266634", dosage: 1 },
+        { locusId: "rs9939609", dosage: 1 },
+      ],
+      baselineState: {
+        inflammation: 0.38,
+        metabolicLoad: 0.44,
+        immuneActivation: 0.4,
+        tumorBurden: 0.04,
+        epigeneticAgeAccel: 0.3,
+        microbiomeDysbiosis: 0.33,
+      },
+      twinParams: {
+        recoveryRate: 0.24,
+        metabolicSensitivity: 0.48,
+        immuneResponsiveness: 0.58,
+        noiseScale: 0.48,
+      },
+      exposome: {
+        airQualityIndex: 78,
+        dietaryInflammatoryIndex: 0.4,
+        toxinLoad: 0.28,
+        pathogenPressure: 0.18,
+      },
+      assays: [
+        {
+          id: "as-isaac-1",
+          kind: "clinical",
+          modality: "composite",
+          status: "complete",
+          orderedAt: iso(3),
+          completedAt: iso(3),
+          summary:
+            "Campus intake vitals — 5′5″ / 150 lb (BMI ~25); BP mildly elevated; mood screen positive",
+          metrics: {
+            heightIn: 65,
+            weightLb: 150,
+            bmi: 25.0,
+            systolicMmHg: 138,
+            diastolicMmHg: 88,
+            drinksPerWeek: 6,
+          },
+        },
+      ],
+      ctDna: [],
+      phenopacket: {
+        id: "pxf-isaac",
+        subjectId: "pt-isaac",
+        phenotypicFeatures: [
+          {
+            typeId: "HP:0000822",
+            label: "Hypertension",
+            severity: "mild",
+            onset: "2025-09-01",
+          },
+          {
+            typeId: "HP:0000716",
+            label: "Depression",
+            severity: "mild",
+            onset: "2025-02-01",
+          },
+          {
+            typeId: "HP:0001824",
+            label: "Weight gain / elevated BMI",
+            severity: "mild",
+          },
+          {
+            typeId: "HP:0030858",
+            label: "Alcohol use (social / fraternity context)",
+            severity: "mild",
+          },
+        ],
+        diseases: [
+          {
+            termId: "MONDO:0005044",
+            label: "Hypertensive disorder",
+            onset: "2025-09-01",
+          },
+          {
+            termId: "MONDO:0002050",
+            label: "Depressive disorder",
+            onset: "2025-02-01",
+          },
+        ],
+        interpretations: [
+          {
+            diagnosis:
+              "College-age male with mild hypertension, depressive symptoms, BMI ~25, social drinking",
+            progressStatus: "in progress",
+          },
+        ],
+      },
+      consent: [
+        {
+          code: "DUO:0000006",
+          label: "Health/medical/biomedical research",
+          allows: ["general_research", "disease_specific_research"],
+        },
+      ],
+      createdAt: iso(3),
+      updatedAt: now,
+    },
+    {
       id: "pt-amara-okonkwo",
       mrn: "MRN-100241",
       displayName: "Amara Okonkwo",

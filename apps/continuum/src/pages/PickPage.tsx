@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { api, type Patient } from "../lib/api";
 
 const BLURBS: Record<string, string> = {
-  "pt-amara-okonkwo": "Best first pick — she has the full story ready.",
+  "pt-isaac": "That’s you (demo) — college, mild BP, mood, campus lifestyle.",
+  "pt-amara-okonkwo": "Best full medical story — cancer path ready.",
   "pt-li-wei": "More about metabolism and everyday risk.",
   "pt-sofia-mendez": "Just starting — good for a quick check.",
 };
