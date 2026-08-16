@@ -1,10 +1,7 @@
 import { NavLink, Route, Routes } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
-import CohortPage from "./pages/CohortPage";
-import PatientPage from "./pages/PatientPage";
-import FederatedPage from "./pages/FederatedPage";
-import ContractsPage from "./pages/ContractsPage";
-import GuidePage from "./pages/GuidePage";
+import PickPage from "./pages/PickPage";
+import StoryPage from "./pages/StoryPage";
 
 export default function App() {
   return (
@@ -12,36 +9,17 @@ export default function App() {
       <header className="topnav">
         <NavLink to="/" className="brand">
           <span className="brand-mark">Graves Continuum</span>
-          <span className="brand-sub">UPM</span>
         </NavLink>
         <nav className="nav-links" aria-label="Primary">
-          <NavLink to="/guide" className={({ isActive }) => (isActive ? "active" : "")}>
-            Guide
-          </NavLink>
-          <NavLink to="/cohort" className={({ isActive }) => (isActive ? "active" : "")}>
-            Cohort
-          </NavLink>
-          <NavLink
-            to="/federated"
-            className={({ isActive }) => (isActive ? "active" : "")}
-          >
-            Federated
-          </NavLink>
-          <NavLink
-            to="/contracts"
-            className={({ isActive }) => (isActive ? "active" : "")}
-          >
-            Contracts
+          <NavLink to="/pick" className={({ isActive }) => (isActive ? "active" : "")}>
+            Try it
           </NavLink>
         </nav>
       </header>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/guide" element={<GuidePage />} />
-        <Route path="/cohort" element={<CohortPage />} />
-        <Route path="/patients/:id" element={<PatientPage />} />
-        <Route path="/federated" element={<FederatedPage />} />
-        <Route path="/contracts" element={<ContractsPage />} />
+        <Route path="/pick" element={<PickPage />} />
+        <Route path="/story/:id" element={<StoryPage />} />
       </Routes>
     </div>
   );

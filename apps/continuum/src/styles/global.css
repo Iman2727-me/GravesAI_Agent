@@ -569,3 +569,89 @@ main {
 .guide-step h3 {
   font-size: 1.15rem;
 }
+
+.btn.big {
+  width: 100%;
+  padding: 0.95rem 1.2rem;
+  font-size: 1.05rem;
+}
+
+.person-pick {
+  display: block;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.person-pick:active,
+.person-pick:hover {
+  border-color: rgba(14, 124, 134, 0.4);
+  transform: translateY(-1px);
+}
+
+.person-name {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.story-progress {
+  display: flex;
+  gap: 0.45rem;
+  margin: 0.85rem 0 0.25rem;
+}
+
+.story-progress span {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.story-progress span.on {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: white;
+}
+
+.story-progress span.done {
+  background: rgba(14, 124, 134, 0.14);
+  border-color: rgba(14, 124, 134, 0.35);
+  color: var(--teal-deep);
+}
+
+.story-card {
+  margin-top: 0.75rem;
+}
+
+.result-block {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0.55rem;
+}
+
+.result-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+}
+
+.risk-meter {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(12, 31, 36, 0.08);
+  overflow: hidden;
+}
+
+.risk-meter > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--sea), var(--amber), var(--rose));
+}
