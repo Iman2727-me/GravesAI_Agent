@@ -24,11 +24,11 @@ export default function LandingPage() {
             adaptive therapeutics, and outcomes-based reimbursement in one closed loop.
           </p>
           <div className="cta-row">
-            <Link className="btn" to="/cohort">
-              Open clinical cohort
+            <Link className="btn" to="/guide">
+              How to use
             </Link>
-            <Link className="btn secondary" to="/federated">
-              Federated discovery
+            <Link className="btn secondary" to="/cohort">
+              Open clinical cohort
             </Link>
           </div>
         </div>

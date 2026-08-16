@@ -74,7 +74,8 @@ export default function ContractsPage() {
                   <div className="metric-label">Net liability</div>
                 </div>
               </div>
-              <table className="table" style={{ marginTop: "0.75rem" }}>
+              <div className="table-wrap" style={{ marginTop: "0.75rem" }}>
+              <table className="table">
                 <thead>
                   <tr>
                     <th>Milestone</th>
@@ -98,6 +99,7 @@ export default function ContractsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
               <button
                 className="btn"
                 style={{ marginTop: "0.75rem" }}

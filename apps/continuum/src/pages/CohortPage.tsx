@@ -62,14 +62,18 @@ export default function CohortPage() {
           {patients.map((p) => (
             <Link className="patient-link" key={p.id} to={`/patients/${p.id}`}>
               <div className="row" style={{ justifyContent: "space-between" }}>
-                <div>
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <strong>{p.displayName}</strong>
                   <div className="mono muted">
-                    {p.mrn} · born {p.birthYear} ·{" "}
-                    {p.ancestry.map((a) => `${a.label} ${(a.proportion * 100).toFixed(0)}%`).join(" / ")}
+                    {p.mrn} · {p.birthYear}
+                  </div>
+                  <div className="mono muted">
+                    {p.ancestry
+                      .map((a) => `${a.label} ${(a.proportion * 100).toFixed(0)}%`)
+                      .join(" / ")}
                   </div>
                 </div>
-                <span className="pill">{p.lifecycleStage}</span>
+                <span className="pill">{p.lifecycleStage.replaceAll("_", " ")}</span>
               </div>
             </Link>
           ))}

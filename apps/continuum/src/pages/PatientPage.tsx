@@ -77,7 +77,7 @@ export default function PatientPage() {
         <div className="stage-rail">
           {STAGES.map((s) => (
             <span key={s} className={s === patient.lifecycleStage ? "on" : ""}>
-              {s.replace("_", " ")}
+              {s.replaceAll("_", " ")}
             </span>
           ))}
         </div>
@@ -156,6 +156,7 @@ export default function PatientPage() {
               {busy === "assay" ? "Ordering…" : "Order assay"}
             </button>
           </div>
+          <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -199,6 +200,7 @@ export default function PatientPage() {
               ))}
             </tbody>
           </table>
+          </div>
           {liquidBiopsy.observations.length > 0 && (
             <div>
               <div className="metric-label">Liquid biopsy / MRD</div>
@@ -327,6 +329,7 @@ export default function PatientPage() {
                 </span>
               </div>
               <p className="muted">{therapy.organoid.notes}</p>
+              <div className="table-wrap">
               <table className="table">
                 <thead>
                   <tr>
@@ -354,6 +357,7 @@ export default function PatientPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
               <div className="grid-3">
                 <div>
                   <div className="metric">
