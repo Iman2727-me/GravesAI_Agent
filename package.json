@@ -1,8 +1,8 @@
 {
-  "name": "thomas",
-  "version": "0.1.0",
+  "name": "gravesai-agent",
+  "version": "1.0.0",
   "private": true,
-  "description": "Thomas (Tommy) — process development and visual modeling AI agent",
+  "description": "Graves Continuum UPM platform + Thomas process agent",
   "workspaces": [
     "packages/*",
     "services/*",
@@ -13,8 +13,12 @@
     "dev:api": "npm run dev -w @thomas/api",
     "dev:feeder": "npm run dev -w @thomas/feeder",
     "dev:visuals": "npm run dev -w @thomas/visuals",
-    "build": "npm run build -w @thomas/shared && npm run build -w @thomas/api && npm run build -w @thomas/feeder && npm run build -w @thomas/visuals",
-    "typecheck": "npm run typecheck -w @thomas/shared && npm run typecheck -w @thomas/api && npm run typecheck -w @thomas/feeder && npm run typecheck -w @thomas/visuals"
+    "dev:continuum-api": "npm run dev -w @graves/continuum-api",
+    "dev:continuum": "npm run dev -w @graves/continuum",
+    "build:continuum": "npm run build -w @graves/upm-shared && npm run build -w @graves/bio-engines && npm run build -w @graves/continuum-api && npm run build -w @graves/continuum",
+    "test:engines": "npm run test -w @graves/bio-engines",
+    "build": "npm run build:continuum && npm run build -w @thomas/shared && npm run build -w @thomas/api && npm run build -w @thomas/feeder && npm run build -w @thomas/visuals",
+    "typecheck": "npm run typecheck -w @graves/upm-shared && npm run typecheck -w @graves/bio-engines && npm run typecheck -w @graves/continuum-api && npm run typecheck -w @graves/continuum && npm run typecheck -w @thomas/shared && npm run typecheck -w @thomas/api && npm run typecheck -w @thomas/feeder && npm run typecheck -w @thomas/visuals"
   },
   "engines": {
     "node": ">=20"
